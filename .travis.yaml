@@ -1,0 +1,19 @@
+# http://docs.travis-ci.com/user/languages/go/
+language: go
+
+go:
+  - 1.8
+
+branches:
+  only:
+    - master
+
+# http://docs.travis-ci.com/user/languages/go/#Dependency-Management
+install:
+   - go get -v github.com/Masterminds/glide
+   - cd $GOPATH/src/github.com/Masterminds/glide && git checkout e73500c735917e39a8b782e0632418ab70250341 && go install && cd -
+   - glide install
+
+# http://docs.travis-ci.com/user/database-setup/#Redis
+services:
+  - redis-server

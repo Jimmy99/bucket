@@ -1,0 +1,28 @@
+hash: f5b0fe776e220b208213eae6ca0e23d750aa15db53f731fcbf7c4ca514cd5335
+updated: 2017-04-20T16:40:51.391711998-07:00
+imports:
+- name: github.com/bsm/redis-lock
+  version: 0a3c01f764b4864e340afce6ffa26c97da6927bb
+- name: github.com/go-redis/redis
+  version: 15786cf82174d65ac7f478c7faa6d2e055dad8b7
+  subpackages:
+  - internal
+  - internal/consistenthash
+  - internal/hashtag
+  - internal/pool
+  - internal/proto
+- name: github.com/gorilla/mux
+  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
