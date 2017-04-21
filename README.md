@@ -1,62 +1,6 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://travis-ci.org/b3ntly/distributed-token-bucket.svg?branch=master)](https://travis-ci.org/b3ntly/distributed-token-bucket)
+
+
 ## Distributed Token Bucket with Redis and Golang
 
 [example](./examples/basic.go)
-
-```golang
-package main
-
-import (
-	"log"
-	"github.com/go-redis/redis"
-	tb "github.com/b3ntly/distributed-token-bucket"
-)
-
-func main(){
-	storageOptions := &redis.Options{
-		Addr:     "127.0.0.1:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	}
-
-	bucket, err := tb.NewBucket("test", 10, storageOptions)
-
-	log.Println("Bucket has 10 tokens.")
-
-	if err != nil {
-		// handler err, most likely due to invalid redis.Options
-	}
-
-	err = bucket.Take(10)
-
-	log.Println("Took 10 tokens.")
-
-	if err != nil {
-		// handle error most likely due to insufficient tokens or redis connection failure
-	}
-
-	err = bucket.Take(10)
-
-	if err != nil && err.Error() != "Insufficient tokens." {
-		// handle error
-	} else {
-		// insufficient tokens in bucket
-		// you probably just want to recall bucket.Take
-	}
-
-	err = bucket.Put(10)
-
-	if err != nil {
-		// handle error
-	}
-
-	log.Println("Put 10 tokens")
-
-	err = bucket.Take(10)
-
-	if err != nil {
-		// handle error
-	}
-
-	log.Println("Took 10 tokens")
-}
-```
