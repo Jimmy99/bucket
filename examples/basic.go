@@ -18,8 +18,7 @@ func main(){
 	log.Println("Bucket has 10 tokens.")
 
 	if err != nil {
-		log.Println(err)
-		return
+		// handler err, most likely due to invalid redis.Options
 	}
 
 	err = bucket.Take(10)
@@ -27,24 +26,22 @@ func main(){
 	log.Println("Took 10 tokens.")
 
 	if err != nil {
-		log.Println(err)
-		return
+		// handle error most likely due to insufficient tokens or redis connection failure
 	}
 
 	err = bucket.Take(10)
 
 	if err != nil && err.Error() != "Insufficient tokens." {
-		log.Println(err)
-		return
+		// handle error
 	} else {
-		log.Println("Insufficient tokens.")
+		// insufficient tokens in bucket
+		// you probably just want to recall bucket.Take
 	}
 
 	err = bucket.Put(10)
 
 	if err != nil {
-		log.Println(err)
-		return
+		// handle error
 	}
 
 	log.Println("Put 10 tokens")
@@ -52,8 +49,7 @@ func main(){
 	err = bucket.Take(10)
 
 	if err != nil {
-		log.Println(err)
-		return
+		// handle error
 	}
 
 	log.Println("Took 10 tokens")
