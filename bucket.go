@@ -36,6 +36,7 @@ func NewBucket(name string, capacity int, storageOptions *redis.Options) (*Bucke
 	// ensure our redis connection is valid
 	_, err := bucket.Ping()
 	if err != nil {
+
 		return nil, err
 	}
 
