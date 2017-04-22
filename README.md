@@ -3,3 +3,22 @@
 ## Distributed Token Bucket with Redis and Golang
 
 [example](./examples/server.go)
+
+## Benchmarks
+
+These benchmarks are incomplete for a few reasons. Currently as it stands
+each instance of a bucket gets it's own redis.Client instance which do not
+pool or share connections between them. Secondly because most operations of
+this library are singular redis keys the benchmark themselves are almost 
+entirely pinned to the performance of Redis which is dominated by whatever
+network latencies present between the instance and whatever process is 
+utilizing this library.
+
+
+
+
+| Benchmark                | Operations | ns/op  |
+|--------------------------|------------|--------|
+| BenchmarkBucket_Create-8 | 10000      | 139613 |
+| BenchmarkBucket_Take-8   | 30000      | 40868  |
+| BenchmarkBucket_Put-8    | 50000      | 29234  |
