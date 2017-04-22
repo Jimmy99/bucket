@@ -10,16 +10,14 @@ branches:
 
 # http://docs.travis-ci.com/user/languages/go/#Dependency-Management
 install:
-   - go get github.com/gorilla/mux
    - go get github.com/go-redis/redis
-   - go get github.com/bsm/redis-lock
    - go get github.com/stretchr/testify
 
 before_install:
  - go get github.com/mattn/goveralls
 
 script:
- - $HOME/gopath/bin/goveralls -service=travis-ci
+ - $HOME/gopath/bin/goveralls -service=travis-ci -ignore examples/*.go
 
 # http://docs.travis-ci.com/user/database-setup/#Redis
 services:

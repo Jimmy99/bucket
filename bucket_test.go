@@ -1,6 +1,7 @@
-package distributed_token_bucket
+package distributed_token_bucket_test
 
 import (
+	tb "github.com/b3ntly/distributed-token-bucket"
 	"github.com/stretchr/testify/assert"
 	"github.com/go-redis/redis"
 	"sync/atomic"
@@ -23,9 +24,9 @@ var (
 	bucketIndex = int32(0)
 )
 
-func MockBucket(initialCapacity int) (*Bucket, error) {
+func MockBucket(initialCapacity int) (*tb.Bucket, error) {
 	atomic.AddInt32(&bucketIndex, 1)
-	return NewBucket(fmt.Sprintf("bucket_%v", atomic.LoadInt32(&bucketIndex)), initialCapacity, redisOptions)
+	return tb.NewBucket(fmt.Sprintf("bucket_%v", atomic.LoadInt32(&bucketIndex)), initialCapacity, redisOptions)
 }
 
 func TestTokenBucket(t *testing.T) {
@@ -41,7 +42,7 @@ func TestTokenBucket(t *testing.T) {
 	})
 
 	t.Run("NewBucket will contain an error if a redis connection is invalid", func(t *testing.T) {
-		_, err := NewBucket("brokenBucket", 10, brokenRedisOptions)
+		_, err := tb.NewBucket("brokenBucket", 10, brokenRedisOptions)
 
 		asserts.NotNil(err, "error should not be nil")
 	})
@@ -50,7 +51,7 @@ func TestTokenBucket(t *testing.T) {
 		bucket, err := MockBucket(10)
 		asserts.Nil(err, "error 1 should be nil")
 
-		err = testClient.Get(bucket.name).Err()
+		err = testClient.Get(bucket.Name).Err()
 		asserts.Nil(err, "error 2 should be nothing")
 	})
 
@@ -61,7 +62,7 @@ func TestTokenBucket(t *testing.T) {
 		err = bucket.Take(11)
 		asserts.NotNil(err, "error 2 should be nil")
 
-		tokenCount, err := testClient.Get(bucket.name).Int64()
+		tokenCount, err := testClient.Get(bucket.Name).Int64()
 
 		asserts.Nil(err, "error 3 should be nothing")
 		assert.Equal(t, int64(10), tokenCount, "testBucket should still have 10 tokens")
@@ -77,7 +78,7 @@ func TestTokenBucket(t *testing.T) {
 		err = bucket.Take(11)
 		asserts.Nil(err, "error 3 should be nothing")
 
-		tokenCount, err := testClient.Get(bucket.name).Int64()
+		tokenCount, err := testClient.Get(bucket.Name).Int64()
 
 		asserts.Nil(err, "error 3 should be nothing")
 		assert.Equal(t, int64(0), tokenCount, "testBucket should still have 10 tokens")

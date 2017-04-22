@@ -1,4 +1,4 @@
-package distributed_token_bucket
+package distributed_token_bucket_test
 
 import (
 	"testing"
@@ -41,7 +41,7 @@ func TestTokenBucketConcurrency(t *testing.T){
 		close(iterations)
 		<-done
 
-		tokenCount, err := testClient.Get(bucket.name).Int64()
+		tokenCount, err := testClient.Get(bucket.Name).Int64()
 
 		asserts.Nil(err, "error 3 should be nothing")
 		assert.Equal(t, int64(0), tokenCount, "testBucket should now have 0 tokens")

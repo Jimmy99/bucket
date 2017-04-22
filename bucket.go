@@ -49,7 +49,7 @@ type Bucket struct {
 	*redis.Client
 
 	// the name of the bucket, used as the key in Redis from which the token value is stored
-	name string
+	Name string
 
 	// the token value a bucket should hold when it is created, if the bucket already exists this does nothing
 	capacity int
@@ -95,12 +95,12 @@ func (bucket *Bucket) Create(name string, capacity int) error {
 
 // Executes a lua script which decrements the token value by tokensDesired if tokensDesired >= the token value.
 func (bucket *Bucket) Take(tokensDesired int) error {
-	return bucket.Eval(luaGetAndDecr, []string{bucket.name}, tokensDesired).Err()
+	return bucket.Eval(luaGetAndDecr, []string{bucket.Name}, tokensDesired).Err()
 }
 
 // Increment the token value by a given amount
 func (bucket *Bucket) Put(amount int) error {
-	return bucket.IncrBy(bucket.name, int64(amount)).Err()
+	return bucket.IncrBy(bucket.Name, int64(amount)).Err()
 }
 
 // attempt on a 500ms interval to asynchronously call bucket.Take until timeout is exceeded
