@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
-	"github.com/go-redis/redis"
 	tb "github.com/b3ntly/distributed-token-bucket"
+	"github.com/go-redis/redis"
+	"log"
 )
 
-func main(){
+func main() {
 	storageOptions := &redis.Options{
 		Addr:     "127.0.0.1:6379",
 		Password: "", // no password set

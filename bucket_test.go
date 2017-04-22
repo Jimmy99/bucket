@@ -1,11 +1,12 @@
 package distributed_token_bucket
 
 import (
-	"fmt"
-	"sync/atomic"
-	"testing"
 	"github.com/stretchr/testify/assert"
 	"github.com/go-redis/redis"
+	"sync/atomic"
+	"testing"
+	"time"
+	"fmt"
 )
 
 var (
@@ -22,45 +23,39 @@ var (
 	bucketIndex = int32(0)
 )
 
-func buildBucket(initialCapacity int) (*Bucket, error) {
+func MockBucket(initialCapacity int) (*Bucket, error) {
 	atomic.AddInt32(&bucketIndex, 1)
-	return NewBucket(fmt.Sprintf("bucket_%s", atomic.LoadInt32(&bucketIndex)), initialCapacity, redisOptions)
+	return NewBucket(fmt.Sprintf("bucket_%v", atomic.LoadInt32(&bucketIndex)), initialCapacity, redisOptions)
 }
 
 func TestTokenBucket(t *testing.T) {
 	asserts := assert.New(t)
 	testClient := redis.NewClient(redisOptions)
 
-	t.Run("bucket.Ping returns redis connection ping response", func(t *testing.T){
-		bucket, err := buildBucket(10)
+	t.Run("bucket.Ping returns redis connection ping response", func(t *testing.T) {
+		bucket, err := MockBucket(10)
 		asserts.Nil(err, "error 1 should be nil")
 
-		_, err = bucket.Ping()
+		_, err = bucket.Ping().Result()
 		asserts.Nil(err, "error 2 should be nil")
 	})
 
-	t.Run("NewBucket will contain an error if a redis connection is invalid", func(t *testing.T){
+	t.Run("NewBucket will contain an error if a redis connection is invalid", func(t *testing.T) {
 		_, err := NewBucket("brokenBucket", 10, brokenRedisOptions)
 
 		asserts.NotNil(err, "error should not be nil")
 	})
 
-	t.Run("storage.Create will return an error from an invalid redis connection", func(t *testing.T){
-		brokenStorage := NewStorage(brokenRedisOptions)
-		err := brokenStorage.Create("broken bucket", 10)
-		asserts.NotNil(err, "error should not be nil")
-	})
-
-	t.Run("NewBucket should create a key in Redis", func(t *testing.T){
-		bucket, err := buildBucket(10)
+	t.Run("NewBucket should create a key in Redis", func(t *testing.T) {
+		bucket, err := MockBucket(10)
 		asserts.Nil(err, "error 1 should be nil")
 
 		err = testClient.Get(bucket.name).Err()
 		asserts.Nil(err, "error 2 should be nothing")
 	})
 
-	t.Run("Cannot take more then initialCapacity from testBucket", func (t *testing.T){
-		bucket, err := buildBucket(10)
+	t.Run("Cannot take more then initialCapacity from testBucket", func(t *testing.T) {
+		bucket, err := MockBucket(10)
 		asserts.Nil(err, "error 1 should be nil")
 
 		err = bucket.Take(11)
@@ -72,8 +67,8 @@ func TestTokenBucket(t *testing.T) {
 		assert.Equal(t, int64(10), tokenCount, "testBucket should still have 10 tokens")
 	})
 
-	t.Run("Can take more then initialCapacity if more then initial capacity is Put() in", func(t *testing.T){
-		bucket, err := buildBucket(10)
+	t.Run("Can take more then initialCapacity if more then initial capacity is Put() in", func(t *testing.T) {
+		bucket, err := MockBucket(10)
 		asserts.Nil(err, "error 1 should be nil")
 
 		err = bucket.Put(1)
@@ -88,39 +83,28 @@ func TestTokenBucket(t *testing.T) {
 		assert.Equal(t, int64(0), tokenCount, "testBucket should still have 10 tokens")
 	})
 
-	t.Run("bucket.Take is safe for basic concurrent access", func(t *testing.T){
-		bucket, err := buildBucket(10)
+	t.Run("bucket.Watch will return nil before timeout if enough tokens is put in", func(t *testing.T){
+		bucket, err := MockBucket(10)
 		asserts.Nil(err, "error 1 should be nil")
 
-		iterations := make(chan int)
-		done := make(chan bool)
+		// call bucket.Watch with a one minute timeout, this becomes a race condition but *should* never matter
+		done := bucket.Watch(11, time.Minute * 1)
+		err = bucket.Put(1)
+		asserts.Nil(err, "error 2 should be nil")
 
-		go func(){
-			for {
-				_, ok := <- iterations
+		err = <- done
 
-				if !ok {
-					done <- true
-					return
-				}
+		asserts.Nil(err, "watch should not concurrently return an error")
+	})
 
-				err := bucket.Take(2)
-				asserts.Nil(err, "error 2 should be nothing")
-			}
-		}()
+	t.Run("bucket.Watch will return an error if timeout is exceeded", func(t *testing.T){
+		bucket, err := MockBucket(10)
+		asserts.Nil(err, "error 1 should be nil")
 
-		for i := 0; i < 5; i++ {
-			iterations <- i
-		}
-
-		// wait for all go routines to finish
-		close(iterations)
-		<-done
-
-		tokenCount, err := testClient.Get(bucket.name).Int64()
-
-		asserts.Nil(err, "error 3 should be nothing")
-		assert.Equal(t, int64(0), tokenCount, "testBucket should now have 0 tokens")
+		// call bucket.Watch with a one minute timeout, this becomes a race condition but *should* never matter
+		done := bucket.Watch(11, time.Millisecond * 1)
+		err = <- done
+		asserts.NotNil(err, "error should not be nil")
 	})
 
 	err := testClient.FlushDb().Err()
