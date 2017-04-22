@@ -6,10 +6,13 @@
 
 ## Benchmarks
 
-These benchmarks are incomplete for a few reasons. Currently as it stands
-each instance of a bucket gets it's own redis.Client instance which do not
-pool or share connections between them. Secondly because most operations of
-this library are singular redis keys the benchmark themselves are almost 
+These benchmarks are fairly incomplete due to a couple of reasons:
+
+* Currently each instance of a bucket gets it's own redis.Client instance which do not
+pool or share connections between them. This is really inefficient when creating large 
+numbers of buckets.
+
+* Most operations in this library are singular redis operations meaning the benchmark themselves are almost 
 entirely pinned to the performance of Redis which is dominated by whatever
 network latencies present between the instance and whatever process is 
 utilizing this library.
