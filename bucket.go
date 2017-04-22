@@ -110,13 +110,14 @@ func (bucket *Bucket) Watch(tokensDesired int, timeout time.Duration) chan error
 
 	go func(tokensDesired int, timeout time.Duration, done chan error){
 		// time.Ticker returns a channel which fires every time the duration provided is passed
-		ticker := time.Tick(time.Millisecond * 500)
+		ticker := time.NewTicker(time.Millisecond * 500)
+		defer ticker.Stop()
 
 		for {
 			select {
 
 			// attempt to take the desiredTokens on every ticker event
-			case <-ticker:
+			case <-ticker.C:
 				if err := bucket.Take(tokensDesired); err == nil {
 					done <- nil
 					break
