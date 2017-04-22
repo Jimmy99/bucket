@@ -2,4 +2,4 @@
 
 ## Distributed Token Bucket with Redis and Golang
 
-[example](./examples/basic.go)
+[example](./examples/server.go)
