@@ -15,11 +15,12 @@ install:
    - go get github.com/bsm/redis-lock
    - go get github.com/stretchr/testify
 
-script: go test
+before_install:
+ - go get github.com/mattn/goveralls
+
+script:
+ - $HOME/gopath/bin/goveralls -service=travis-ci
 
 # http://docs.travis-ci.com/user/database-setup/#Redis
 services:
   - redis-server
-
-after_success:
-  - coveralls
