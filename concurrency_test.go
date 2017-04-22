@@ -14,7 +14,7 @@ func TestTokenBucketConcurrency(t *testing.T){
 
 	t.Run("bucket.Take is safe for basic concurrent access", func(t *testing.T) {
 		bucket, err := MockBucket(10)
-		asserts.Nil(err, "error 1 should be nil")
+		asserts.Nil(err, "Failed to build bucket for bucket.Take.concurrent")
 
 		iterations := make(chan int)
 		done := make(chan bool)
@@ -29,7 +29,7 @@ func TestTokenBucketConcurrency(t *testing.T){
 				}
 
 				err := bucket.Take(2)
-				asserts.Nil(err, "error 2 should be nothing")
+				asserts.Nil(err, "Incorrectly returned error for bucket.Take.concurrent.client")
 			}
 		}()
 
@@ -42,8 +42,8 @@ func TestTokenBucketConcurrency(t *testing.T){
 		<-done
 
 		tokenCount, err := testClient.Get(bucket.Name).Int64()
+		asserts.Nil(err, "Incorrectly returned error for client.Get.concurrent")
 
-		asserts.Nil(err, "error 3 should be nothing")
 		assert.Equal(t, int64(0), tokenCount, "testBucket should now have 0 tokens")
 	})
 }
