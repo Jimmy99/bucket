@@ -2,12 +2,15 @@
 
 ## Distributed Token Bucket with Redis and Golang
 
-Token-buckets are useful algorithms for things like rate-limiting and network congestion
-control. Normally token-buckets are implemented in-memory which is helpful for high performance
-applications. But what happens if you need rate limiting across a distributed system? This
-library attempts to solve this problem by utilizing Redis as the token broker powering the
+The token bucket algorithm is useful for things like rate-limiting and network congestion
+control. 
+
+Normally token buckets are implemented in-memory which is helpful for high performance
+applications. But what happens if you need rate limiting across a distributed system? 
+
+This library attempts to solve said problem by utilizing Redis as the token broker powering the
 token bucket. Redis is particularly good at this because of it's relatively high level of
-performance and concurrency control via only operating on a single thread.
+performance and concurrency control via its single-threaded runtime.
 
 ## Install
 
