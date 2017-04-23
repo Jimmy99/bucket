@@ -2,7 +2,68 @@
 
 ## Distributed Token Bucket with Redis and Golang
 
-[example](./examples/server.go)
+Token-buckets are useful algorithms for things like rate-limiting and network congestion
+control. Normally token-buckets are implemented in-memory which is helpful for high performance
+applications. But what happens if you need rate limiting across a distributed system? This
+library attempts to solve this problem by utilizing Redis as the token broker powering the
+token bucket. Redis is particularly good at this because of it's relatively high level of
+performance and concurrency control via only operating on a single thread.
+
+## Install
+
+```golang
+go get github.com/b3ntly/distributed-token-bucket
+```
+
+## Basic Usage
+
+```golang
+package main
+
+import (
+    tb "github.com/b3ntly/distributed-token-bucket
+    "github.com/go-redis/redis"
+)
+
+func main(){
+    storageOptions = &redis.Options{
+        Addr:     "127.0.0.1:6379",
+        Password: "", // no password set
+        DB:       1,  // use default DB
+    }
+    
+    // initialize a bucket with 5 tokens
+    bucket, err = tb.NewBucket(key, 5, storageOptions)
+    
+    // take 5 tokens
+    err := bucket.Take(5)
+    
+    // try to take 5 tokens, this will return an error as there are not 5 tokens in the bucket
+    err = bucket.Take(5)
+    // err.Error() => "Insufficient tokens."
+    
+    // put 5 tokens back into the bucket
+    err = bucket.Put(5)
+    
+    // wait for at least 10 tokens to be in the bucket (currently 5)
+    done = bucket.Watch(10)
+    
+    // put 5 tokens into the bucket
+    err = bucket.Put(5)
+    
+    // listen for bucket.Watch to return via the returned channel
+    err = <- done
+    
+    // (err == nil)
+}
+```
+
+## Notes
+
+* Test coverage badge is stuck in some cache and is out of date, click the badge to see the actual current coverage
+
+
+[real-life example](./examples/server.go)
 
 ## Benchmarks
 
