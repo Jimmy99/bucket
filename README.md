@@ -65,8 +65,9 @@ func main(){
 
 * Test coverage badge is stuck in some cache and is out of date, click the badge to see the actual current coverage
 
+## Examples
 
-[real-life example](./examples/server.go)
+[http-server](./examples/server.go)
 
 ## Benchmarks
 
