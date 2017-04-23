@@ -45,20 +45,18 @@ const (
 	`
 )
 
-type (
-	Bucket struct {
-		client *redis.Client
+type Bucket struct {
+	client *redis.Client
 
-		// the name of the bucket, used as the key in Redis for which the token value is stored
-		Name string
+	// the name of the bucket, used as the key in Redis for which the token value is stored
+	Name string
 
-		// the token value a bucket should hold when it is created, if the bucket already exists this does nothing
-		capacity int
-	}
-)
+	// the token value a bucket should hold when it is created, if the bucket already exists this does nothing
+	capacity int
+}
 
-// Connect and verify a redis client connection while instantiating a bucket then create a key-value pair in the database
-// if one does not already exist for the given name
+
+// Connect and verify a redis client connection while instantiating a bucket then create a key-value pair in the database if one does not already exist for the given name
 func NewBucket(name string, capacity int, storageOptions *redis.Options) (*Bucket, error) {
 	bucket := &Bucket{ client: redis.NewClient(storageOptions), Name: name, capacity: capacity }
 
