@@ -31,17 +31,17 @@ import (
 )
 
 func main(){
-    storageOptions = &redis.Options{
+    storageOptions := &redis.Options{
         Addr:     "127.0.0.1:6379",
         Password: "", // no password set
         DB:       1,  // use default DB
     }
     
     // initialize a bucket with 5 tokens
-    bucket, err = tb.NewBucket(key, 5, storageOptions)
+    bucket, err := tb.NewBucket(key, 5, storageOptions)
     
     // take 5 tokens
-    err := bucket.Take(5)
+    err = bucket.Take(5)
     
     // try to take 5 tokens, this will return an error as there are not 5 tokens in the bucket
     err = bucket.Take(5)
@@ -51,7 +51,7 @@ func main(){
     err = bucket.Put(5)
     
     // wait for at least 10 tokens to be in the bucket (currently 5)
-    done = bucket.Watch(10)
+    done := bucket.Watch(10)
     
     // put 5 tokens into the bucket
     err = bucket.Put(5)
