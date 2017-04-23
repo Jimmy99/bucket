@@ -24,7 +24,7 @@ go get github.com/b3ntly/distributed-token-bucket
 package main
 
 import (
-    tb "github.com/b3ntly/distributed-token-bucket
+    tb "github.com/b3ntly/distributed-token-bucket"
     "github.com/go-redis/redis"
 )
 
