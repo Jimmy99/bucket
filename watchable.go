@@ -1,4 +1,4 @@
-package distributed_token_bucket
+package bucket
 
 type Watchable struct {
 	// signal indicating an action is completed

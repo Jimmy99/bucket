@@ -1,7 +1,7 @@
-package distributed_token_bucket_test
+package bucket_test
 
 import (
-	tb "github.com/b3ntly/distributed-token-bucket"
+	tb "github.com/b3ntly/bucket"
 	"strconv"
 	"testing"
 )

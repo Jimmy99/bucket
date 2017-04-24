@@ -1,4 +1,4 @@
-package distributed_token_bucket
+package bucket
 
 import (
 	"github.com/b3ntly/bucket/storage"
