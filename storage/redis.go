@@ -1,4 +1,4 @@
-package distributed_token_bucket
+package storage
 
 import (
 	"github.com/go-redis/redis"

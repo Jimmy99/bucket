@@ -1,4 +1,4 @@
-package distributed_token_bucket
+package storage
 
 import (
 	"sync"
@@ -25,10 +25,6 @@ func (ms *MemoryStorage) Create(name string, capacity int) error {
 	}
 
 	ms.buckets[name] = capacity
-
-	if _, exists := ms.buckets[name]; !exists {
-		return errors.New("Failed to create bucket.")
-	}
 
 	return nil
 }

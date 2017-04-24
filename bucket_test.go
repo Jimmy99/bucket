@@ -1,15 +1,17 @@
 package distributed_token_bucket_test
 
 import (
-	"fmt"
 	tb "github.com/b3ntly/distributed-token-bucket"
-	storage "github.com/b3ntly/distributed-token-bucket/storage"
+	"github.com/b3ntly/distributed-token-bucket/storage"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
 	"sync/atomic"
 	"testing"
 	"time"
+	"fmt"
 )
+
+// INTEGRATION TESTING
 
 var (
 	redisOptions = &redis.Options{
@@ -18,15 +20,10 @@ var (
 		DB:       5,  // use default DB
 	}
 
-	brokenRedisOptions = &redis.Options{
-		Addr: "127.0.0.1:8080",
-	}
-
 	bucketIndex int32 = 0
 
 	testClient = redis.NewClient(redisOptions)
 )
-
 
 func MockBucket(initialCapacity int, storage storage.IStorage) (*tb.Bucket, error) {
 	// create unique bucket names from a concurrently accessible index
@@ -47,8 +44,6 @@ func TestTokenBucket(t *testing.T) {
 	var err error
 
 	asserts := assert.New(t)
-
-	brokenRedisStorage, err := storage.NewStorage("redis", brokenRedisOptions)
 	asserts.Nil(err, "Should be able to create a broken redis storage instance")
 
 	// provider agnostic tests which should be run against each provider
@@ -103,40 +98,7 @@ func TestTokenBucket(t *testing.T) {
 			err = <-done
 			asserts.Error(err, "Failed to return an error due to a timeout on bucket.Watch()")
 		})
-
-
 	}
-
-	// redisStorage specific tests
-	t.Run("NewBucket will contain an error if storage.Ping() fails", func(t *testing.T) {
-		_, err := MockBucket(10, brokenRedisStorage)
-		asserts.Error(err, "brokenBucket test did not return an error for an invalid redis connection.")
-	})
-
-	t.Run("NewBucket should create a key in Redis", func(t *testing.T) {
-		bucket, err := MockBucket(10, MockStorage()[0])
-		asserts.Nil(err, "Failed to create bucket for tb.Create()")
-
-		err = testClient.Get(bucket.Name).Err()
-		asserts.Nil(err, "Bucket name for tb.Create() test not saved in redis.")
-	})
-
-	t.Run("bucket.Create will error if the key is already taken by a value that cannot be converted to an integer", func(t *testing.T) {
-		err := testClient.Set("some_key", "some_value", 0).Err()
-		asserts.Nil(err, "Incorrectly returned an error for client.Set().keyTaken")
-
-		_, err = tb.NewBucket("some_key", 10, brokenRedisStorage)
-		asserts.Error(err, "Failed to return an error for NewBucket().keyTaken")
-	})
-
-
-	t.Run("bucket.Create will error if the key is already taken and contains a value of 0.", func(t *testing.T) {
-		err := testClient.Set("some_key2", 0, 0).Err()
-		asserts.Nil(err, "Incorrectly returned an error for client.Set().keyTaken")
-
-		_, err = tb.NewBucket("some_key2", 10, MockStorage()[0])
-		asserts.Error(err, "Failed to return an error for Newbucket().keyZero")
-	})
 
 	err = testClient.FlushDb().Err()
 	asserts.Nil(err, "redist test db should flush")
