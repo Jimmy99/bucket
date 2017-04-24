@@ -55,7 +55,7 @@ func main(){
 	done := b.Watch(10, time.Second * 5).Done()
 	// error == nil
 
-	// put 5 tokens into the bucket
+	// put 100 tokens into the bucket
 	err = b.Put(100)
 	// error == nil
 
