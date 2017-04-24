@@ -53,7 +53,6 @@ func main(){
 
 	// wait for up to 5 seconds for 10 tokens to be available
 	done := b.Watch(10, time.Second * 5).Done()
-	time.Sleep(time.Second * 6)
 	// error == nil
 
 	// put 100 tokens into the bucket
