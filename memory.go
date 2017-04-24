@@ -7,7 +7,6 @@ import (
 )
 
 type MemoryStorage struct {
-	id int
 	mutex sync.RWMutex
 	buckets map[string]int
 }
@@ -15,8 +14,6 @@ type MemoryStorage struct {
 func (ms *MemoryStorage) Ping() error { return nil }
 
 func (ms *MemoryStorage) Create(name string, capacity int) error {
-	ms.id = 1
-
 	if ms.buckets == nil {
 		ms.buckets = map[string]int{}
 	}
