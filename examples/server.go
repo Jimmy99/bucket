@@ -1,21 +1,21 @@
 package main
 
 import (
+	"fmt"
 	tb "github.com/b3ntly/distributed-token-bucket"
 	"github.com/go-redis/redis"
-	"sync/atomic"
-	"net/http"
-	"time"
-	"sync"
-	"fmt"
 	"io"
+	"net/http"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 var (
 	bucket *tb.Bucket
-	wg = &sync.WaitGroup{}
+	wg     = &sync.WaitGroup{}
 
-	requests int64 = 0
+	requests         int64 = 0
 	requestsAccepted int64 = 0
 
 	storageOptions = &redis.Options{
@@ -31,10 +31,16 @@ var (
 	key = "some_key_007"
 )
 
-func main(){
+func main() {
 	var err error
 
-	bucket, err = tb.NewBucket(key, 5, storageOptions)
+	storage, err := tb.NewStorage("redis", storageOptions)
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	bucket, err = tb.NewBucket(key, 5, storage)
 
 	if err != nil {
 		fmt.Println(err)
@@ -53,7 +59,7 @@ func main(){
 	fmt.Printf("%v requests handled, %v requests accepted.\n", atomic.LoadInt64(&requests), atomic.LoadInt64(&requestsAccepted))
 }
 
-func client(){
+func client() {
 	resp, err := netClient.Get("http://127.0.0.1:8080/")
 	defer resp.Body.Close()
 
@@ -63,7 +69,7 @@ func client(){
 	}
 }
 
-func handler(w http.ResponseWriter, r *http.Request){
+func handler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	atomic.AddInt64(&requests, int64(1))
@@ -79,12 +85,12 @@ func handler(w http.ResponseWriter, r *http.Request){
 	wg.Done()
 }
 
-func server(){
+func server() {
 	http.HandleFunc("/", handler)
 	go http.ListenAndServe(":8080", nil)
 }
 
-func cleanUp(){
+func cleanUp() {
 	client := redis.NewClient(storageOptions)
 	err := client.Del(key).Err()
 

@@ -1,19 +1,19 @@
 package distributed_token_bucket_test
 
 import (
-	"testing"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 // concurrency is hard to test for and this library should be evaluated
 // much more stringently then these tests provide for if used in production
-func TestTokenBucketConcurrency(t *testing.T){
+func TestTokenBucketConcurrency(t *testing.T) {
 	asserts := assert.New(t)
 	testClient := redis.NewClient(redisOptions)
 
 	t.Run("bucket.Take is safe for basic concurrent access", func(t *testing.T) {
-		bucket, err := MockBucket(10)
+		bucket, err := MockBucket(10, MockStorage()[0])
 		asserts.Nil(err, "Failed to build bucket for bucket.Take.concurrent")
 
 		iterations := make(chan int)

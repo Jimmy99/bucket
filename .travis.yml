@@ -17,7 +17,7 @@ before_install:
  - go get github.com/mattn/goveralls
 
 script:
- - $HOME/gopath/bin/goveralls -service=travis-ci -ignore examples/server.go
+ - $HOME/gopath/bin/goveralls -service=travis-ci -ignore examples/simple.go,examples/memory.go,examples/server.go,examples/multi-bucket.go
 
 # http://docs.travis-ci.com/user/database-setup/#Redis
 services:
