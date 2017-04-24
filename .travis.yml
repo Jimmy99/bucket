@@ -12,12 +12,19 @@ branches:
 install:
    - go get github.com/go-redis/redis
    - go get github.com/stretchr/testify
+   - go get golang.org/x/tools/cmd/cover
+   - go get github.com/axw/gocov/gocov
+   - go get github.com/modocache/gover
+   - go get github.com/mattn/goveralls
+
+script:
+  - go test -coverprofile=storage.coverprofile ./storage
+  - go test -coverprofile=main.coverprofile
+  - $HOME/gopath/bin/gover
+  - $HOME/gopath/bin/goveralls -coverprofile=gover.coverprofile -service travis-ci
 
 before_install:
  - go get github.com/mattn/goveralls
-
-script:
- - $HOME/gopath/bin/goveralls -service=travis-ci -package github.com/b3ntly/distributed-token-bucket
 
 # http://docs.travis-ci.com/user/database-setup/#Redis
 services:
