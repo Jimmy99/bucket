@@ -1,27 +1,21 @@
 package main
 
 import (
-	tb "github.com/b3ntly/distributed-token-bucket"
-	storage "github.com/b3ntly/distributed-token-bucket/storage"
-	"github.com/go-redis/redis"
+	"github.com/b3ntly/bucket"
+	"github.com/b3ntly/bucket/storage"
 	"fmt"
 )
 
 func main(){
 	var err error
 
-	storageOptions := &redis.Options{
-		Addr:     "127.0.0.1:6379",
-		PoolSize: 30,
-	}
-
-	store, err := storage.NewStorage("redis", storageOptions)
+	store, err := storage.NewStorage("memory", nil)
 	// error == nil
 
 	// you can create multiple buckets with the same storage instance to share client connections
-	bucketOne, err := tb.NewBucket("bucket_one", 50, store)
-	bucketTwo, err := tb.NewBucket("bucket_two", 50, store)
-	bucketThree, err := tb.NewBucket("bucket_three", 50, store)
+	bucketOne, err := bucket.NewBucket("bucket_one", 50, store)
+	bucketTwo, err := bucket.NewBucket("bucket_two", 50, store)
+	bucketThree, err := bucket.NewBucket("bucket_three", 50, store)
 
 	err = bucketOne.Take(5)
 	err = bucketTwo.Take(5)

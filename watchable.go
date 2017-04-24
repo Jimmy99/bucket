@@ -1,25 +1,31 @@
 package bucket
 
+// a basic structure from which to cancel or observe an asynchronous action
 type Watchable struct {
-	// signal indicating an action is completed
 	Success chan error
 
-	// a channel from which to cancel an asynchronous action
 	Cancel  chan error
 
-	// a read only channel from which to receive errors
 	Failed  chan error
 
-	// end the Done() loop to prevent any memory leaks
+	// The final observable which the user is likely to read from. Though it can only be fired once it is buffered
+	// so that is may be ignored.
 	Finished chan error
 }
 
 func NewWatchable() *Watchable {
-	return &Watchable{ make(chan error), make(chan error), make(chan error), make(chan error) }
+	watchable := &Watchable{ make(chan error), make(chan error), make(chan error), make(chan error, 2) }
+	watchable.listen()
+	return watchable
 }
 
-// Return a channel that will only be fired a maximum of one time from a Watchable event
+// Return the intended final observable
 func (w *Watchable) Done() chan error {
+	return w.Finished
+}
+
+// Listen and response to various signals. It will only receive a maximum of one signal by design.
+func (w *Watchable) listen() {
 	go func(){
 		select {
 		case err := <- w.Success:
@@ -31,11 +37,9 @@ func (w *Watchable) Done() chan error {
 
 		w.Close()
 	}()
-
-	return w.Finished
 }
 
-// Close all channels to prevent memory leaks
+// Close all channels to prevent memory leaks.
 func (w *Watchable) Close(){
 	close(w.Success)
 	close(w.Cancel)

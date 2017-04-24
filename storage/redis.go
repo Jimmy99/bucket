@@ -42,34 +42,28 @@ func (rs *RedisStorage) Ping() error {
 
 // bucket.Create will create a new bucket with the given parameters if one does not exist, if no bucket can be created it will return an error
 func (rs *RedisStorage) Create(name string, capacity int) error {
-	// query redis and see if the key already exists
-	//
-	// we receive tokensCount as a string in case 'name' already existed as a key and was not intended to be used here
-	// i.e. "test" might be already taken and have some string value
+	// check if name exists as a key of redis
 	strTokensCount, err := rs.client.Get(name).Result()
 
-	// if the name key does not exist in redis create it with the value of capacity
+	// if the name key does not exist in redis create it with the value of capacity and return nil (or an error if redis throws one)
 	if err == redis.Nil || len(strTokensCount) == 0 {
 		// the last param 0 indicates the key will never expire
 		return rs.client.Set(name, capacity, 0).Err()
 	}
 
-	// if strTokensCount can not be converted to an integer we will assume this key is already taken for something else
-	// and return an error
+	// if the found value is a string which cannot be converted to an integer assume this key is protected and return an error
 	tokensCount, err := strconv.Atoi(strTokensCount)
 
 	if err != nil {
 		return err
 	}
 
-	// throw an error if a bucket already exists but is fully depleted, in order to prevent user confusion
-	//
-	// for example this might happen if a user does not think a bucket exists and it really does
+	// if the following value is converted to the integer 0 assume this was a programming mistake and the programmer
+	// was not aware that this key already existed, return an error
 	if tokensCount == 0 {
 		return errors.New("Bucket exists in redis but contains a value of 0. Try putting tokens back into this bucket.")
 	}
 
-	// great we know the bucket exists and has an acceptable value
 	return nil
 }
 
@@ -78,12 +72,12 @@ func (rs *RedisStorage) Take(bucketName string, tokens int) error {
 	return rs.client.Eval(luaGetAndDecr, []string{bucketName}, tokens).Err()
 }
 
-// Increment the token value by a given amount
+// Increment the token value by a given amount.
 func (rs *RedisStorage) Put(bucketName string, tokens int) error {
 	return rs.client.IncrBy(bucketName, int64(tokens)).Err()
 }
 
-// return the token value of a given bucket
+// Return the token value of a given bucket.
 func (rs *RedisStorage) Count(bucketName string) (int, error) {
 	count, err := rs.client.Get(bucketName).Int64()
 	return int(count), err

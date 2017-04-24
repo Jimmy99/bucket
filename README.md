@@ -1,18 +1,17 @@
 [![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/b3ntly/bucket/master/LICENSE.txt) [![Build Status](https://travis-ci.org/b3ntly/bucket.svg?branch=master)](https://travis-ci.org/b3ntly/bucket)
 [![Coverage Status](https://coveralls.io/repos/github/b3ntly/bucket/badge.svg?branch=master)](https://coveralls.io/github/b3ntly/bucket?branch=master?q=1) [![GoDoc](https://godoc.org/github.com/b3ntly/bucket?status.svg)](https://godoc.org/github.com/b3ntly/bucket)
 
-
 ## Bucket primitives with support for in-memory or Redis based storage
 
-The token bucket algorithm is useful for things like rate-limiting and network congestion
-control. 
+![An image of a bucket should go here](./images/bucket.jpg, "Buckets!")
 
-Normally token buckets are implemented in-memory which is helpful for high performance
-applications. But what happens if you need rate limiting across a distributed system? 
+The bucket is a simple and powerful tool. Don't doubt the bucket. With a bucket
+you can:
 
-This library attempts to solve said problem by utilizing Redis as the token broker powering the
-token bucket. Redis is particularly good at this because of its relatively high level of
-performance and concurrency control via its single-threaded runtime.
+* Implement token bucket algorithms
+* Implement a rate-limiter
+* Work with distributed systems
+
 
 ## Install
 
@@ -26,43 +25,81 @@ go get github.com/b3ntly/distributed-token-bucket
 package main
 
 import (
-	tb "github.com/b3ntly/distributed-token-bucket"
+	"github.com/b3ntly/bucket"
+	"github.com/b3ntly/bucket/storage"
 	"time"
 	"fmt"
 )
 
 func main(){
-	storage, err := tb.NewStorage("memory", nil)
+	// use in-memory storage
+	store, err := storage.NewStorage("memory", nil)
 	// error == nil
 
 	// initialize a bucket with 5 tokens
-	bucket, err := tb.NewBucket("simple_bucket", 5, storage)
+	b, err := bucket.NewBucket("simple_bucket", 5, store)
 
 	// take 5 tokens
-	err = bucket.Take(5)
+	err = b.Take(5)
 	// error == nil
 
 	// try to take 5 tokens, this will return an error as there are not 5 tokens in the bucket
-	err = bucket.Take(5)
+	err = b.Take(5)
 	// err.Error() => "Insufficient tokens."
 
 	// put 5 tokens back into the bucket
-	err = bucket.Put(5)
+	err = b.Put(5)
 	// error == nil
 
-	// wait for at least 10 tokens to be in the bucket (currently 5)
-	done := bucket.Watch(10, time.Second * 5)
+	// wait for up to 5 seconds for 10 tokens to be available
+	done := b.Watch(10, time.Second * 5).Done()
+	time.Sleep(time.Second * 6)
 	// error == nil
 
-	// put 5 tokens into the bucket
-	err = bucket.Put(100)
+	// put 100 tokens into the bucket
+	err = b.Put(100)
 	// error == nil
 
 	// listen for bucket.Watch to return via the returned channel
 	err = <- done
+	// error == nil
 
 	// (err == nil)
 	fmt.Println(err)
+}
+```
+
+## Redis
+
+```golang
+package main
+
+import (
+	"github.com/b3ntly/bucket"
+	"github.com/b3ntly/bucket/storage"
+	"github.com/go-redis/redis"
+	"fmt"
+)
+
+func main(){
+	storageOptions := &redis.Options{
+		Addr:     "127.0.0.1:6379",
+		PoolSize: 30,
+	}
+
+	store, err := storage.NewStorage("redis", storageOptions)
+
+	if err != nil {
+		// handle error
+	}
+
+	b, err := bucket.NewBucket("some_bucket", 10, store)
+
+	if err != nil {
+		// handle error
+	}
+
+	fmt.Println(b.Name)
 }
 ```
 
@@ -101,6 +138,37 @@ func main(){
 }
 ```
 
+## Watchables
+
+```golang
+package main
+
+import (
+	"time"
+	"errors"
+	"github.com/b3ntly/bucket"
+	"github.com/b3ntly/bucket/storage"
+	"fmt"
+)
+
+func main(){
+	// use in-memory storage
+	store, _ := storage.NewStorage("memory", nil)
+	// error == nil
+
+	b, _ := bucket.NewBucket("simple_bucket", 5, store)
+	// error == nil
+
+	watchable := b.Watch(10, time.Second * 5)
+	watchable.Cancel <- errors.New("I wasn't happy with this watcher :/")
+
+	// capture the error as the watcher exits
+	err := <- watchable.Done()
+
+	fmt.Println(err)
+}
+```
+
 ## Notes
 
 * Test coverage badge is stuck in some cache and is out of date, click the badge to see the actual current coverage
@@ -113,23 +181,23 @@ func main(){
 * Replaced storageOptions parameter with IStorage, allowing a single storage option to be shared
   between multiple buckets. This should make it much more efficient to have a large number of buckets, i.e.
   per logged in user.
-
-## Examples
-
-[simple](./examples/simple.go)
-
-[multi-bucket](./examples/mult-bucket.go)
-
-[http-server](./examples/server.go)
+  
+# Changelog for version 0.3
+  
+* Renamed the repository from distributed-token-bucket to bucket
+* Moved storage interface and providers to the /storage subpackage
+* Added unit testing to the /storage subpackage
+* Added watchable.go and changed signatures of all async functions to return a watchable
+* Fixed examples
+* Added more documentation and comments  
 
 ## Benchmarks
 
-These benchmarks are fairly incomplete due to a couple of reasons:
+```golang
+go test -bench .
+```
 
-* Most operations in this library are singular redis operations meaning the benchmark themselves are almost 
-entirely pinned to the performance of Redis which is dominated by whatever
-network latencies present between the instance and whatever process is 
-utilizing this library.
+These benchmarks are fairly incomplete and should be taken with a shot of tequila.
 
 
 Version 0.1
@@ -158,6 +226,24 @@ Redis
 | BenchmarkBucket_Create-8 | 10000      | 71259 ns/op |
 | BenchmarkBucket_Take-8   | 30000      | 47357 ns/op  |
 | BenchmarkBucket_Put-8    | 50000      | 28360 ns/op  |
+
+Version 0.3
+
+Memory
+
+| Benchmark                | Operations | ns/op  |
+|--------------------------|------------|--------|
+| BenchmarkBucket_Create-8 | 10000      | 572 ns/op |
+| BenchmarkBucket_Take-8   | 30000      | 105 ns/op  |
+| BenchmarkBucket_Put-8    | 50000      | 105 ns/op  |
+
+Redis
+
+| Benchmark                | Operations | ns/op  |
+|--------------------------|------------|--------|
+| BenchmarkBucket_Create-8 | 10000      | 75309 ns/op |
+| BenchmarkBucket_Take-8   | 30000      | 49815 ns/op  |
+| BenchmarkBucket_Put-8    | 50000      | 30638 ns/op  |
 
 
 
