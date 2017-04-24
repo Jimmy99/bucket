@@ -2,20 +2,12 @@ package main
 
 import (
 	tb "github.com/b3ntly/distributed-token-bucket"
-	"github.com/go-redis/redis"
 	"time"
 	"fmt"
 )
 
 func main(){
-	var err error
-
-	storageOptions := &redis.Options{
-		Addr:     "127.0.0.1:6379",
-		PoolSize: 30,
-	}
-
-	storage, err := tb.NewStorage("redis", storageOptions)
+	storage, err := tb.NewStorage("memory", nil)
 	// error == nil
 
 	// initialize a bucket with 5 tokens
