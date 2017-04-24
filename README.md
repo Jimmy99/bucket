@@ -51,20 +51,21 @@ func main(){
 	err = b.Put(5)
 	// error == nil
 
-	// wait for up to 5 seconds for 10 tokens to be available
-	done := b.Watch(10, time.Second * 5).Done()
-	// error == nil
+	// watch for 10 tokens to be available, timing out after 5 seconds
+    done := b.Watch(10, time.Second * 5).Done()
+    // error == nil
 
-	// put 100 tokens into the bucket
-	err = b.Put(100)
-	// error == nil
+    // put 5 tokens into the bucket
+    err = b.Put(100)
+    // error == nil
 
-	// listen for bucket.Watch to return via the returned channel
-	err = <- done
-	// error == nil
+    // listen for bucket.Watch to return via the returned channel, it will return nil if 10 tokens could be acquired
+    // else it will return an error from timing out, a manual cancelation (see ./watchable.go) or an actual error
+    err = <- done
+    // error == nil
 
-	// (err == nil)
-	fmt.Println(err)
+    // (err == nil)
+    fmt.Println(err)
 }
 ```
 
