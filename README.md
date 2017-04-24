@@ -16,7 +16,7 @@ you can:
 ## Install
 
 ```golang
-go get github.com/b3ntly/distributed-token-bucket
+go get github.com/b3ntly/bucket
 ```
 
 ## Basic Usage
