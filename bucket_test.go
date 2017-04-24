@@ -1,8 +1,8 @@
-package distributed_token_bucket_test
+package bucket_test
 
 import (
-	tb "github.com/b3ntly/distributed-token-bucket"
-	"github.com/b3ntly/distributed-token-bucket/storage"
+	tb "github.com/b3ntly/bucket"
+	"github.com/b3ntly/bucket/storage"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
 	"sync/atomic"

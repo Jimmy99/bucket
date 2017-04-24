@@ -1,4 +1,4 @@
-package distributed_token_bucket_test
+package bucket_test
 
 import (
 	"github.com/go-redis/redis"

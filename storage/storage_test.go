@@ -4,7 +4,7 @@ import (
 	"testing"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
-	"github.com/b3ntly/distributed-token-bucket/storage"
+	"github.com/b3ntly/bucket/storage"
 )
 
 // UNIT TESTING

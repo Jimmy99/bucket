@@ -1,7 +1,7 @@
 package distributed_token_bucket
 
 import (
-	"github.com/b3ntly/distributed-token-bucket/storage"
+	"github.com/b3ntly/bucket/storage"
 	"errors"
 	"time"
 )

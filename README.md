@@ -1,4 +1,4 @@
-[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/b3ntly/bucket/master/LICENSE.txt)[![Build Status](https://travis-ci.org/b3ntly/bucket.svg?branch=master)](https://travis-ci.org/b3ntly/bucket) 
+[![MIT licensed](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/b3ntly/bucket/master/LICENSE.txt) [![Build Status](https://travis-ci.org/b3ntly/bucket.svg?branch=master)](https://travis-ci.org/b3ntly/bucket)
 [![Coverage Status](https://coveralls.io/repos/github/b3ntly/bucket/badge.svg?branch=master)](https://coveralls.io/github/b3ntly/bucket?branch=master?q=1) [![GoDoc](https://godoc.org/github.com/b3ntly/bucket?status.svg)](https://godoc.org/github.com/b3ntly/bucket)
 
 
