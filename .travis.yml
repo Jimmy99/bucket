@@ -17,7 +17,7 @@ before_install:
  - go get github.com/mattn/goveralls
 
 script:
- - $HOME/gopath/bin/goveralls -service=travis-ci -ignore examples/server.go
+ - $HOME/gopath/bin/goveralls -service=travis-ci -package github.com/b3ntly/distributed-token-bucket
 
 # http://docs.travis-ci.com/user/database-setup/#Redis
 services:

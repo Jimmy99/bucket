@@ -1,34 +1,42 @@
 package distributed_token_bucket_test
 
-import(
+import (
 	tb "github.com/b3ntly/distributed-token-bucket"
-	"github.com/go-redis/redis"
-	"testing"
 	"strconv"
+	"testing"
 )
 
-var options = &redis.Options{
-	Addr:     "127.0.0.1:6379",
-	Password: "", // no password set
-	DB:       5,  // use default DB
-}
-
 func BenchmarkBucket_Create(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		_, _ = tb.NewBucket(strconv.Itoa(i), i, options)
+	for _, storage := range MockStorage() {
+		b.Run("Bucket_Create_Benchmark", func(b *testing.B){
+			for i := 0; i < b.N; i++ {
+				_, _ = tb.NewBucket(strconv.Itoa(i), i, storage)
+			}
+		})
+
 	}
 }
 
 func BenchmarkBucket_Take(b *testing.B) {
-	bucket, _ := MockBucket(b.N)
-	for i := 0; i < b.N; i++ {
-		_ = bucket.Take(1)
+	for _, storage := range MockStorage() {
+		bucket, _ := MockBucket(b.N, storage)
+
+		b.Run("Bucket_Take_Benchmark", func(b *testing.B){
+			for i := 0; i < b.N; i++ {
+				_ = bucket.Take(1)
+			}
+		})
 	}
 }
 
 func BenchmarkBucket_Put(b *testing.B) {
-	bucket, _ := MockBucket(0)
-	for i := 0; i < b.N; i++ {
-		_ = bucket.Put(1)
+	for _, storage := range MockStorage() {
+		bucket, _ := MockBucket(b.N, storage)
+
+		b.Run("Bucket_Take_Benchmark", func(b *testing.B){
+			for i := 0; i < b.N; i++ {
+				_ = bucket.Put(1)
+			}
+		})
 	}
 }
