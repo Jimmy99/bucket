@@ -98,6 +98,46 @@ func TestTokenBucket(t *testing.T) {
 			err = <-done
 			asserts.Error(err, "Failed to return an error due to a timeout on bucket.Watch()")
 		})
+
+		t.Run("bucket.Count should count", func(t *testing.T){
+			bucket, err := MockBucket(1, store)
+			asserts.Nil(err, "Failed to create a bucket for bucket.Fill.cancelable test")
+
+			count, err := bucket.Count()
+			asserts.Nil(err, "bucket.Count should not return an error for bucket.Fill")
+
+			asserts.NotZero(count, "Count should be greater then 0")
+		})
+
+		t.Run("bucket.Fill can be canceled", func(t *testing.T){
+			bucket, err := MockBucket(0, store)
+			asserts.Nil(err, "Failed to create a bucket for bucket.Fill.cancelable test")
+
+			watchable := bucket.Fill(100, time.Second * 1)
+			done := watchable.Done()
+			watchable.Cancel <- nil
+			err = <-done
+			asserts.Nil(err, "bucket.Fill should cancel without an error")
+		})
+
+		t.Run("bucket.Fill actually fills", func(t *testing.T){
+			bucket, err := MockBucket(0, store)
+			asserts.Nil(err, "Failed to create a bucket for bucket.Fill.cancelable test")
+
+			watchable := bucket.Fill(100, time.Millisecond * 1)
+			done := watchable.Done()
+			time.Sleep(time.Millisecond * 4)
+
+			watchable.Cancel <- nil
+			<-done
+
+			asserts.Nil(err, "bucket.Fill should cancel without an error")
+
+			count, err := bucket.Count()
+			asserts.Nil(err, "bucket.Count should not return an error for bucket.Fill")
+
+			asserts.NotZero(count, "Count should be greater then 0")
+		})
 	}
 
 	err = testClient.FlushDb().Err()
