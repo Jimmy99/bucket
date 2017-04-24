@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	tb "github.com/b3ntly/distributed-token-bucket"
+	storage "github.com/b3ntly/distributed-token-bucket/storage"
 	"github.com/go-redis/redis"
 	"io"
 	"net/http"
@@ -34,13 +35,13 @@ var (
 func main() {
 	var err error
 
-	storage, err := tb.NewStorage("redis", storageOptions)
+	store, err := storage.NewStorage("redis", storageOptions)
 
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	bucket, err = tb.NewBucket(key, 5, storage)
+	bucket, err = tb.NewBucket(key, 5, store)
 
 	if err != nil {
 		fmt.Println(err)

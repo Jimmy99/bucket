@@ -3,6 +3,7 @@ package distributed_token_bucket_test
 import (
 	"fmt"
 	tb "github.com/b3ntly/distributed-token-bucket"
+	storage "github.com/b3ntly/distributed-token-bucket/storage"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
 	"sync/atomic"
@@ -27,7 +28,7 @@ var (
 )
 
 
-func MockBucket(initialCapacity int, storage tb.IStorage) (*tb.Bucket, error) {
+func MockBucket(initialCapacity int, storage storage.IStorage) (*tb.Bucket, error) {
 	// create unique bucket names from a concurrently accessible index
 	atomic.AddInt32(&bucketIndex, 1)
 	name := fmt.Sprintf("bucket_%v", atomic.LoadInt32(&bucketIndex))
@@ -35,10 +36,10 @@ func MockBucket(initialCapacity int, storage tb.IStorage) (*tb.Bucket, error) {
 	return tb.NewBucket(name, initialCapacity, storage)
 }
 
-func MockStorage() []tb.IStorage {
-	redisStorage, _ := tb.NewStorage("redis", redisOptions)
-	memoryStorage, _ := tb.NewStorage("memory", nil)
-	return []tb.IStorage{ redisStorage, memoryStorage }
+func MockStorage() []storage.IStorage {
+	redisStorage, _ := storage.NewStorage("redis", redisOptions)
+	memoryStorage, _ := storage.NewStorage("memory", nil)
+	return []storage.IStorage{ redisStorage, memoryStorage }
 }
 
 
@@ -47,13 +48,21 @@ func TestTokenBucket(t *testing.T) {
 
 	asserts := assert.New(t)
 
-	brokenRedisStorage, err := tb.NewStorage("redis", brokenRedisOptions)
+	brokenRedisStorage, err := storage.NewStorage("redis", brokenRedisOptions)
 	asserts.Nil(err, "Should be able to create a broken redis storage instance")
 
 	// provider agnostic tests which should be run against each provider
-	for _, storage := range MockStorage() {
+	for _, store := range MockStorage() {
+		t.Run("Bucket should be countable", func(t *testing.T){
+			capacity := 10
+			bucket, err := MockBucket(capacity, store)
+			asserts.Nil(err, "Failed to create bucket for .Count")
+
+			count, err := bucket.Count()
+			asserts.Equal(capacity, count, "count should be equal")
+		})
 		t.Run("Cannot take more then initialCapacity from testBucket", func(t *testing.T) {
-			bucket, err := MockBucket(10, storage)
+			bucket, err := MockBucket(10, store)
 			asserts.Nil(err, "Failed to create bucket for initialCapacity test.")
 
 			err = bucket.Take(11)
@@ -61,7 +70,7 @@ func TestTokenBucket(t *testing.T) {
 		})
 
 		t.Run("Can take more then initialCapacity if more then initial capacity is Put() in", func(t *testing.T) {
-			bucket, err := MockBucket(10, storage)
+			bucket, err := MockBucket(10, store)
 			asserts.Nil(err, "Failed to create bucket for .Put() test")
 
 			err = bucket.Put(1)
@@ -72,11 +81,11 @@ func TestTokenBucket(t *testing.T) {
 		})
 
 		t.Run("bucket.Watch will return nil before timeout if enough tokens are put in", func(t *testing.T) {
-			bucket, err := MockBucket(10, storage)
+			bucket, err := MockBucket(10, store)
 			asserts.Nil(err, "Incorrectly returned an error for bucket.Watch() test")
 
 			// call bucket.Watch with a one minute timeout, this becomes a race condition but *should* never matter
-			done := bucket.Watch(11, time.Second*10)
+			done := bucket.Watch(11, time.Second*10).Done()
 			err = bucket.Put(1)
 			asserts.Nil(err, "Incorrectly returned an error on bucket.Watch() test (2)")
 
@@ -86,11 +95,11 @@ func TestTokenBucket(t *testing.T) {
 		})
 
 		t.Run("bucket.Watch will return an error if timeout is exceeded", func(t *testing.T) {
-			bucket, err := MockBucket(10, storage)
+			bucket, err := MockBucket(10, store)
 			asserts.Nil(err, "Failed to create a bucket for bucket.Watch().timeout test")
 
 			// call bucket.Watch with a one minute timeout, this becomes a race condition but *should* never matter
-			done := bucket.Watch(11, time.Millisecond*1)
+			done := bucket.Watch(11, time.Millisecond*1).Done()
 			err = <-done
 			asserts.Error(err, "Failed to return an error due to a timeout on bucket.Watch()")
 		})

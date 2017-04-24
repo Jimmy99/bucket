@@ -2,7 +2,6 @@ package distributed_token_bucket
 
 import (
 	"github.com/go-redis/redis"
-	"time"
 	"strconv"
 	"errors"
 )
@@ -84,35 +83,8 @@ func (rs *RedisStorage) Put(bucketName string, tokens int) error {
 	return rs.client.IncrBy(bucketName, int64(tokens)).Err()
 }
 
-// attempt on a 500ms interval to asynchronously call bucket.Take until timeout is exceeded
-// returns a channel which will fire nil or error on completion
-func (rs *RedisStorage) Watch(bucketName string, tokens int, duration time.Duration) chan error {
-	done := make(chan error)
-	timeout := time.After(duration)
-
-	go func(tokensDesired int, timeout <-chan time.Time, done chan error) {
-		// time.Ticker returns a channel which fires every time the duration provided is passed
-		ticker := time.NewTicker(time.Millisecond * 500)
-		defer ticker.Stop()
-
-		for {
-			select {
-
-			// attempt to take the desiredTokens on every ticker event
-			case <-ticker.C:
-				if err := rs.Take(bucketName, tokensDesired); err == nil {
-					done <- nil
-					break
-				}
-
-			// return an error if our timeout has passed
-			case <-timeout:
-
-				done <- errors.New("Watch timeout.")
-				break
-			}
-		}
-	}(tokens, timeout, done)
-
-	return done
+// return the token value of a given bucket
+func (rs *RedisStorage) Count(bucketName string) (int, error) {
+	count, err := rs.client.Get(bucketName).Int64()
+	return int(count), err
 }

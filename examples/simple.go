@@ -2,12 +2,13 @@ package main
 
 import (
 	tb "github.com/b3ntly/distributed-token-bucket"
+	storage "github.com/b3ntly/distributed-token-bucket/storage"
 	"time"
 	"fmt"
 )
 
 func main(){
-	storage, err := tb.NewStorage("memory", nil)
+	storage, err := storage.NewStorage("memory", nil)
 	// error == nil
 
 	// initialize a bucket with 5 tokens
@@ -26,7 +27,7 @@ func main(){
 	// error == nil
 
 	// wait for at least 10 tokens to be in the bucket (currently 5)
-	done := bucket.Watch(10, time.Second * 5)
+	done := bucket.Watch(10, time.Second * 5).Done()
 	// error == nil
 
 	// put 5 tokens into the bucket
@@ -35,6 +36,7 @@ func main(){
 
 	// listen for bucket.Watch to return via the returned channel
 	err = <- done
+	// error == nil
 
 	// (err == nil)
 	fmt.Println(err)
