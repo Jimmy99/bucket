@@ -1,4 +1,4 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://travis-ci.org/b3ntly/distributed-token-bucket.svg?branch=master)](https://travis-ci.org/b3ntly/distributed-token-bucket) [![Coverage Status](https://coveralls.io/repos/github/b3ntly/distributed-token-bucket/badge.svg?branch=master)](https://coveralls.io/github/b3ntly/distributed-token-bucket?branch=master?q=1) 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![Build Status](https://travis-ci.org/b3ntly/distributed-token-bucket.svg?branch=master)](https://travis-ci.org/b3ntly/distributed-token-bucket) 
 [![GoDoc](https://godoc.org/github.com/b3ntly/distributed-token-bucket?status.svg)](https://godoc.org/github.com/b3ntly/distributed-token-bucket)
 
 
