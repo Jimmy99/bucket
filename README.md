@@ -9,8 +9,8 @@ The bucket is a simple and powerful tool. Don't doubt the bucket. With a bucket
 you can:
 
 * Implement token bucket algorithms
-* Implement a rate-limiter
 * Work with distributed systems
+* Build sand castles
 
 
 ## Install
