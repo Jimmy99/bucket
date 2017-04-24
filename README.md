@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/b3ntly/bucket/badge.svg?branch=master)](https://coveralls.io/github/b3ntly/bucket?branch=master?q=1) [![GoDoc](https://godoc.org/github.com/b3ntly/bucket?status.svg)](https://godoc.org/github.com/b3ntly/bucket)
 
 
-## Distributed Token Bucket with Redis and Golang
+## Bucket primitives with support for in-memory or Redis based storage
 
 The token bucket algorithm is useful for things like rate-limiting and network congestion
 control. 
