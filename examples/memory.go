@@ -28,7 +28,7 @@ func main(){
 	// error == nil
 
 	// wait for at least 10 tokens to be in the bucket (currently 5)
-	done := bucket.Watch(10, time.Second * 5)
+	done := bucket.Watch(10, time.Second * 5).Done()
 	// error == nil
 
 	// put 5 tokens into the bucket

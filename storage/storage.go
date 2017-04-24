@@ -3,7 +3,6 @@ package distributed_token_bucket
 import (
 	"github.com/go-redis/redis"
 	"errors"
-	"time"
 	"fmt"
 )
 
@@ -20,7 +19,7 @@ type (
 		Create(name string, tokens int) error
 		Take(bucketName string, tokens int) error
 		Put(bucketName string, tokens int) error
-		Watch(bucketName string, tokens int, duration time.Duration) chan error
+		Count(bucketName string) (int, error)
 	}
 )
 
