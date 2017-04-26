@@ -3,7 +3,7 @@
 
 ## Bucket primitives with support for in-memory or Redis based storage
 
-![An image of a bucket should go here](https://raw.githubusercontent.com/b3ntly/bucket/master/images/bucket.jpg =500x400)
+![An image of a bucket should go here](https://raw.githubusercontent.com/b3ntly/bucket/master/images/bucket.jpg=500x400)
 
 The bucket is a simple and powerful tool. Don't doubt the bucket. With a bucket
 you can:
