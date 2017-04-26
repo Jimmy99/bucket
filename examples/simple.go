@@ -2,22 +2,21 @@ package main
 
 import (
 	"github.com/b3ntly/bucket"
-	"github.com/b3ntly/bucket/storage"
 	"time"
 	"fmt"
 )
 
 func main(){
-	// use in-memory storage
-	store, err := storage.NewStorage("memory", nil)
-	// error == nil
-
-	// initialize a bucket with 5 tokens
-	b, err := bucket.NewBucket("simple_bucket", 5, store)
+	// bucket will use in-memory storage as default
+	b, err := bucket.New(&bucket.Options{
+		Name: "my_bucket",
+		Capacity: 10,
+	})
+	// err == nil
 
 	// take 5 tokens
 	err = b.Take(5)
-	// error == nil
+	// err == nil
 
 	// try to take 5 tokens, this will return an error as there are not 5 tokens in the bucket
 	err = b.Take(5)
@@ -25,11 +24,11 @@ func main(){
 
 	// put 5 tokens back into the bucket
 	err = b.Put(5)
-	// error == nil
+	// err == nil
 
 	// watch for 10 tokens to be available, timing out after 5 seconds
 	done := b.Watch(10, time.Second * 5).Done()
-	// error == nil
+	// err == nil
 
 	// put 5 tokens into the bucket
 	err = b.Put(100)
@@ -40,6 +39,18 @@ func main(){
 	err = <- done
 	// error == nil
 
+	// will fill the bucket at the given rate when the interval channel is sent to
+	signal := make(chan time.Time)
+	watchable := b.DynamicFill(100, signal)
+	signal <- time.Now()
+
+	// stop the bucket from filling any longer
+	watchable.Close(nil)
+
+	// take all the tokens out of the bucket
+	tokens, err := b.TakeAll()
+
 	// (err == nil)
 	fmt.Println(err)
+	fmt.Println(tokens)
 }

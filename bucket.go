@@ -4,6 +4,7 @@ import (
 	"github.com/b3ntly/bucket/storage"
 	"errors"
 	"time"
+	"github.com/go-redis/redis"
 )
 
 /**
@@ -32,7 +33,7 @@ import (
 
 type (
 	Bucket struct {
-		storage storage.IStorage
+		storage storage.Storage
 
 		// the name of the bucket, may have implications for certain storage providers
 		Name string
@@ -40,7 +41,30 @@ type (
 		// the token value a bucket should hold when it is created, if the bucket already exists this does nothing
 		capacity int
 	}
+
+	Options struct {
+		Storage storage.Storage
+		Name string
+		Capacity int
+	}
 )
+
+var (
+	DefaultMemoryStore = &storage.MemoryStorage{}
+
+	// Options which use redis as the storage back-end, defaults to the default redis options
+	DefaultRedisStore = &storage.RedisStorage{ Client: redis.NewClient(&redis.Options{ Addr: ":6379" }) }
+)
+
+
+// initialize options with defaults
+func (opts *Options) init(store storage.Storage) *Options {
+	if opts.Storage == nil {
+		opts.Storage = store
+	}
+
+	return opts
+}
 
 // Instantiate the bucket with a given storage object. Test the validity of the storage with storage.Ping().
 //
@@ -50,8 +74,17 @@ type (
 // unexpected, for example if a name has a string value in redis (which may indicate it is reserved for something else
 // in the database). Redis will also reject sharing a bucket name whose value is 0, this was a personal choice because
 // I found myself incorrectly using bucket names I thought did not exist but actually did (from leftover tests).
-func NewBucket(name string, capacity int, storage storage.IStorage) (*Bucket, error) {
-	bucket := &Bucket{Name: name, capacity: capacity, storage: storage}
+func New(options *Options) (*Bucket, error) {
+	return create(options.init(DefaultMemoryStore))
+}
+
+// Create a bucket with Redis storage
+func NewWithRedis(options *Options) (*Bucket, error){
+	return create(options.init(DefaultRedisStore))
+}
+
+func create(options *Options) (*Bucket, error){
+	bucket := &Bucket{Name: options.Name, capacity: options.Capacity, storage: options.Storage}
 
 	// ensure our redis connection is valid
 	err := bucket.storage.Ping()
@@ -59,19 +92,19 @@ func NewBucket(name string, capacity int, storage storage.IStorage) (*Bucket, er
 		return nil, err
 	}
 
-	err = bucket.Create(name, capacity)
-
+	err = bucket.storage.Create(bucket.Name, bucket.capacity)
 	return bucket, err
-}
-
-func (bucket *Bucket) Create(name string, capacity int) error {
-	return bucket.storage.Create(name, capacity)
 }
 
 // Decrement the token value of a bucket if the number of tokens in the bucket is >= tokensDesired. It will return
 // an error if not enough tokens exist.
 func (bucket *Bucket) Take(tokensDesired int) error {
 	return bucket.storage.Take(bucket.Name, tokensDesired)
+}
+
+// returns a conditional amount of tokens representing all the tokens
+func (bucket *Bucket) TakeAll() (int, error){
+	return bucket.storage.TakeAll(bucket.Name)
 }
 
 // Increment the token value by a given amount.
@@ -90,7 +123,7 @@ func (bucket *Bucket) Watch(tokens int, duration time.Duration) *Watchable {
 	watchable := NewWatchable()
 	timeout := time.After(duration)
 
-	go func() {
+	go func(bucket *Bucket, watchable *Watchable, timeout <-chan time.Time, tokens int) {
 		// time.Ticker returns a channel which fires every time the duration provided is passed
 		ticker := time.NewTicker(time.Millisecond * 500)
 		defer ticker.Stop()
@@ -117,33 +150,30 @@ func (bucket *Bucket) Watch(tokens int, duration time.Duration) *Watchable {
 				return
 			}
 		}
-	}()
+	}(bucket, watchable, timeout, tokens)
 
 	return watchable
 }
 
-// Start a ticker that will periodically put tokens into the bucket at a given rate on the defined interval. Returns
+// Start a ticker that will periodically set the token value to a given rate on the defined interval. Returns
 // a Watchable object identical to bucket.Watch, and thus may be canceled and observed.
 func (bucket *Bucket) Fill(rate int, interval time.Duration) *Watchable {
 	watchable := NewWatchable()
 
-	go func(){
+	go func(bucket *Bucket, watchable *Watchable, rate int, interval time.Duration){
 		ticker := time.NewTicker(interval)
 		defer ticker.Stop()
 
+		// ensure we our not filling past capacity
+		if rate > bucket.capacity {
+			rate = bucket.capacity
+		}
+
 		for {
 			select {
-
 			case <- ticker.C:
-				count, err := bucket.storage.Count(bucket.Name)
 
-				// our program may rely on our bucket to be refilled reliably, so we should fail hard on error
-				if err != nil {
-					watchable.Failed <- err
-					return
-				}
-
-				err = bucket.storage.Put(bucket.Name, rate - count)
+				err := bucket.storage.Set(bucket.Name, rate)
 
 				// our program may rely on our bucket to be refilled reliably, so we should fail hard on error
 				if err != nil {
@@ -157,7 +187,40 @@ func (bucket *Bucket) Fill(rate int, interval time.Duration) *Watchable {
 				return
 			}
 		}
-	}()
+	}(bucket, watchable, rate, interval)
+
+	return watchable
+}
+
+// Dynamic fill fills the bucket every time it reads from interval
+func (bucket *Bucket) DynamicFill(rate int, interval chan time.Time) *Watchable {
+	watchable := NewWatchable()
+
+	go func(bucket *Bucket, watchable *Watchable, rate int, interval chan time.Time){
+
+		for {
+			if rate > bucket.capacity {
+				rate = bucket.capacity
+			}
+
+			select {
+			case <- interval:
+
+
+				err := bucket.storage.Set(bucket.Name, rate)
+
+				// our program may rely on our bucket to be refilled reliably, so we should fail hard on error
+				if err != nil {
+					watchable.Failed <- err
+					return
+				}
+
+			case err := <- watchable.Cancel:
+				watchable.Failed <- err
+				return
+			}
+		}
+	}(bucket, watchable, rate, interval)
 
 	return watchable
 }

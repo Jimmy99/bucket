@@ -48,6 +48,24 @@ func (ms *MemoryStorage) Take(bucketName string, tokens int) error {
 	return nil
 }
 
+// get and return the token value, set the token value to zero
+func (ms *MemoryStorage) TakeAll(bucketName string) (int, error){
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
+
+	count := ms.buckets[bucketName]
+	ms.buckets[bucketName] = 0
+
+	return count, nil
+}
+
+func (ms *MemoryStorage) Set(bucketName string, tokens int) error {
+	ms.mutex.Lock()
+	defer ms.mutex.Unlock()
+	ms.buckets[bucketName] = tokens
+	return nil
+}
+
 // Increment the entry value by the given tokens integer
 func (ms *MemoryStorage) Put(bucketName string, tokens int) error {
 	ms.mutex.Lock()

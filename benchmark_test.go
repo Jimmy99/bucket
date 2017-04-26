@@ -2,15 +2,21 @@ package bucket_test
 
 import (
 	tb "github.com/b3ntly/bucket"
-	"strconv"
 	"testing"
 )
 
 func BenchmarkBucket_Create(b *testing.B) {
-	for _, storage := range MockStorage() {
+	cases := []*BucketCase{
+		&BucketCase{ constructor: tb.New, options: &tb.Options{} },
+		&BucketCase{ constructor: tb.NewWithRedis, options: redisBucketOptions },
+	}
+
+	for _, test := range cases {
 		b.Run("Bucket_Create_Benchmark", func(b *testing.B){
 			for i := 0; i < b.N; i++ {
-				_, _ = tb.NewBucket(strconv.Itoa(i), i, storage)
+				test.options.Name = MockBucketName()
+				test.options.Capacity= 10
+				_, _ = test.constructor(test.options)
 			}
 		})
 
@@ -18,8 +24,15 @@ func BenchmarkBucket_Create(b *testing.B) {
 }
 
 func BenchmarkBucket_Take(b *testing.B) {
-	for _, storage := range MockStorage() {
-		bucket, _ := MockBucket(b.N, storage)
+	cases := []*BucketCase{
+		{ constructor: tb.New, options: &tb.Options{} },
+		{ constructor: tb.NewWithRedis, options: redisBucketOptions },
+	}
+
+	for _, test := range cases {
+		test.options.Name = MockBucketName()
+		test.options.Capacity= b.N
+		bucket, _ := test.constructor(test.options)
 
 		b.Run("Bucket_Take_Benchmark", func(b *testing.B){
 			for i := 0; i < b.N; i++ {
@@ -30,8 +43,15 @@ func BenchmarkBucket_Take(b *testing.B) {
 }
 
 func BenchmarkBucket_Put(b *testing.B) {
-	for _, storage := range MockStorage() {
-		bucket, _ := MockBucket(b.N, storage)
+	cases := []*BucketCase{
+		{ constructor: tb.New, options: &tb.Options{} },
+		{ constructor: tb.NewWithRedis, options: redisBucketOptions },
+	}
+
+	for _, test := range cases {
+		test.options.Name = MockBucketName()
+		test.options.Capacity = 0
+		bucket, _ := test.constructor(test.options)
 
 		b.Run("Bucket_Take_Benchmark", func(b *testing.B){
 			for i := 0; i < b.N; i++ {

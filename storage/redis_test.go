@@ -10,33 +10,34 @@ import (
 	"github.com/b3ntly/bucket/storage"
 )
 
-func MockBucket(initialCapacity int, storage storage.IStorage) (*tb.Bucket, error) {
+func MockRedisBucket(capacity int, redisOptions *redis.Options) (*tb.Bucket, error) {
 	// create unique bucket names from a concurrently accessible index
 	atomic.AddInt32(&bucketIndex, 1)
 	name := fmt.Sprintf("bucket_%v", atomic.LoadInt32(&bucketIndex))
 
-	return tb.NewBucket(name, initialCapacity, storage)
+	return tb.NewWithRedis(&tb.Options{
+		Name: name,
+		Capacity: capacity,
+		Storage: &storage.RedisStorage{
+			Client: redis.NewClient(redisOptions),
+		},
+
+	})
 }
 
 func TestRedisStorage_Ping(t *testing.T) {
 	asserts := assert.New(t)
-
 	testClient := redis.NewClient(redisOptions)
 
-	redisStorage, err := storage.NewStorage("redis", redisOptions)
-	asserts.Nil(err, "Storage should be instantiable.")
-
-	brokenRedisStorage, err := storage.NewStorage("redis", brokenRedisOptions)
-	asserts.Nil(err, "Storage should be instantiable.")
 
 	// redisStorage specific tests
 	t.Run("NewBucket will contain an error if storage.Ping() fails", func(t *testing.T) {
-		_, err := MockBucket(10, brokenRedisStorage)
+		_, err := MockRedisBucket(10, brokenRedisOptions)
 		asserts.Error(err, "brokenBucket test did not return an error for an invalid redis connection.")
 	})
 
 	t.Run("NewBucket should create a key in Redis", func(t *testing.T) {
-		bucket, err := MockBucket(10, redisStorage)
+		bucket, err := MockRedisBucket(10, redisOptions)
 		asserts.Nil(err, "Failed to create bucket for tb.Create()")
 
 		err = testClient.Get(bucket.Name).Err()
@@ -47,7 +48,14 @@ func TestRedisStorage_Ping(t *testing.T) {
 		err := testClient.Set("some_key", "some_value", 0).Err()
 		asserts.Nil(err, "Incorrectly returned an error for client.Set().keyTaken")
 
-		_, err = tb.NewBucket("some_key", 10, brokenRedisStorage)
+		_, err = tb.New(&tb.Options{
+			Capacity: 10,
+			Name: "some_key",
+			Storage: &storage.RedisStorage{
+				Client: redis.NewClient(redisOptions),
+			},
+		})
+
 		asserts.Error(err, "Failed to return an error for NewBucket().keyTaken")
 	})
 
@@ -56,10 +64,17 @@ func TestRedisStorage_Ping(t *testing.T) {
 		err := testClient.Set("some_key2", 0, 0).Err()
 		asserts.Nil(err, "Incorrectly returned an error for client.Set().keyTaken")
 
-		_, err = tb.NewBucket("some_key2", 10, redisStorage)
+		_, err = tb.New(&tb.Options{
+			Capacity: 10,
+			Name: "some_key2",
+			Storage: &storage.RedisStorage{
+				Client: redis.NewClient(redisOptions),
+			},
+		})
+
 		asserts.Error(err, "Failed to return an error for Newbucket().keyZero")
 	})
 
-	err = testClient.FlushDb().Err()
+	err := testClient.FlushDb().Err()
 	asserts.Nil(err, "redist test db should flush")
 }
