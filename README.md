@@ -221,7 +221,7 @@ func main(){
   between multiple buckets. This should make it much more efficient to have a large number of buckets, i.e.
   per logged in user.
   
-# Changelog for version 0.3
+## Changelog for version 0.3
   
 * Renamed the repository from distributed-token-bucket to bucket
 * Moved storage interface and providers to the /storage subpackage
