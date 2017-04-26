@@ -3,23 +3,43 @@ package main
 import (
 	"github.com/b3ntly/bucket"
 	"github.com/b3ntly/bucket/storage"
+	"github.com/go-redis/redis"
 	"fmt"
 )
 
 func main(){
 	var err error
 
-	store, err := storage.NewStorage("memory", nil)
-	// error == nil
+	// with custom redis options
+	store := &storage.RedisStorage{
+		Client: redis.NewClient(&redis.Options{
+			Addr: ":6379",
+			DB: 5,
+			PoolSize: 30,
+		}),
+	}
 
-	// you can create multiple buckets with the same storage instance to share client connections
-	bucketOne, err := bucket.NewBucket("bucket_one", 50, store)
-	bucketTwo, err := bucket.NewBucket("bucket_two", 50, store)
-	bucketThree, err := bucket.NewBucket("bucket_three", 50, store)
+	b, err := bucket.New(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with custom config 1",
+		Storage: store,
+	})
 
-	err = bucketOne.Take(5)
-	err = bucketTwo.Take(5)
-	err = bucketThree.Take(5)
+	b2, err := bucket.New(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with custom config 2",
+		Storage: store,
+	})
+
+	b3, err := bucket.New(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with custom config 3",
+		Storage: store,
+	})
+
+	err = b.Take(5)
+	err = b2.Take(5)
+	err = b3.Take(5)
 
 	fmt.Println(err)
 }

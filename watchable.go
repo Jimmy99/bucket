@@ -30,17 +30,21 @@ func (w *Watchable) listen() {
 		select {
 		case err := <- w.Success:
 			w.Finished <- err
+			w.cleanup()
 
 		case err := <- w.Failed:
 			w.Finished <- err
+			w.cleanup()
 		}
-
-		w.Close()
 	}()
 }
 
 // Close all channels to prevent memory leaks.
-func (w *Watchable) Close(){
+func (w *Watchable) Close(err error){
+	w.Cancel <- err
+}
+
+func (w *Watchable) cleanup(){
 	close(w.Success)
 	close(w.Cancel)
 	close(w.Failed)

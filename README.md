@@ -26,22 +26,21 @@ package main
 
 import (
 	"github.com/b3ntly/bucket"
-	"github.com/b3ntly/bucket/storage"
 	"time"
 	"fmt"
 )
 
 func main(){
-	// use in-memory storage
-	store, err := storage.NewStorage("memory", nil)
-	// error == nil
-
-	// initialize a bucket with 5 tokens
-	b, err := bucket.NewBucket("simple_bucket", 5, store)
+	// bucket will use in-memory storage as default
+	b, err := bucket.New(&bucket.Options{
+		Name: "my_bucket",
+		Capacity: 10,
+	})
+	// err == nil
 
 	// take 5 tokens
 	err = b.Take(5)
-	// error == nil
+	// err == nil
 
 	// try to take 5 tokens, this will return an error as there are not 5 tokens in the bucket
 	err = b.Take(5)
@@ -49,13 +48,13 @@ func main(){
 
 	// put 5 tokens back into the bucket
 	err = b.Put(5)
-	// error == nil
+	// err == nil
 
 	// watch for 10 tokens to be available, timing out after 5 seconds
 	done := b.Watch(10, time.Second * 5).Done()
-	// error == nil
+	// err == nil
 
-	// put 100 tokens into the bucket
+	// put 5 tokens into the bucket
 	err = b.Put(100)
 	// error == nil
 
@@ -64,12 +63,73 @@ func main(){
 	err = <- done
 	// error == nil
 
+	// will fill the bucket at the given rate when the interval channel is sent to
+	signal := make(chan time.Time)
+	watchable := b.DynamicFill(100, signal)
+	signal <- time.Now()
+
+	// stop the bucket from filling any longer
+	watchable.Close(nil)
+
+	// take all the tokens out of the bucket
+	tokens, err := b.TakeAll()
+
 	// (err == nil)
 	fmt.Println(err)
+	fmt.Println(tokens)
 }
 ```
 
 ## Redis
+
+```golang
+package main
+
+import (
+	"github.com/b3ntly/bucket"
+	"github.com/b3ntly/bucket/storage"
+	"fmt"
+	"github.com/go-redis/redis"
+)
+
+func main(){
+	b, err := bucket.NewWithRedis(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with default config",
+	})
+
+	if err != nil {
+		fmt.Println(1, err)
+		return
+	}
+
+	fmt.Println(b.Name)
+
+	// with custom redis options
+	store := &storage.RedisStorage{
+		Client: redis.NewClient(&redis.Options{
+			Addr: ":6379",
+			DB: 5,
+			PoolSize: 30,
+		}),
+	}
+
+	b2, err := bucket.New(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with custom config",
+		Storage: store,
+	})
+
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(b2.Name)
+}
+```
+
+## Multi-bucket
 
 ```golang
 package main
@@ -82,57 +142,38 @@ import (
 )
 
 func main(){
-	storageOptions := &redis.Options{
-		Addr:     "127.0.0.1:6379",
-		PoolSize: 30,
-	}
-
-	store, err := storage.NewStorage("redis", storageOptions)
-
-	if err != nil {
-		// handle error
-	}
-
-	b, err := bucket.NewBucket("some_bucket", 10, store)
-
-	if err != nil {
-		// handle error
-	}
-
-	fmt.Println(b.Name)
-}
-```
-
-## Multi-bucket
-
-```golang
-package main
-
-import (
-	tb "github.com/b3ntly/distributed-token-bucket"
-	"github.com/go-redis/redis"
-	"fmt"
-)
-
-func main(){
 	var err error
 
-	storageOptions := &redis.Options{
-		Addr:     "127.0.0.1:6379",
-		PoolSize: 30,
+	// with custom redis options
+	store := &storage.RedisStorage{
+		Client: redis.NewClient(&redis.Options{
+			Addr: ":6379",
+			DB: 5,
+			PoolSize: 30,
+		}),
 	}
 
-	storage, err := tb.NewStorage("redis", storageOptions)
-	// error == nil
+	b, err := bucket.New(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with custom config 1",
+		Storage: store,
+	})
 
-	// you can create multiple buckets with the same storage instance to share client connections
-	bucketOne, err := tb.NewBucket("bucket_one", 50, storage)
-	bucketTwo, err := tb.NewBucket("bucket_two", 50, storage)
-	bucketThree, err := tb.NewBucket("bucket_three", 50, storage)
+	b2, err := bucket.New(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with custom config 2",
+		Storage: store,
+	})
 
-	err = bucketOne.Take(5)
-	err = bucketTwo.Take(5)
-	err = bucketThree.Take(5)
+	b3, err := bucket.New(&bucket.Options{
+		Capacity: 10,
+		Name: "My redis bucket with custom config 3",
+		Storage: store,
+	})
+
+	err = b.Take(5)
+	err = b2.Take(5)
+	err = b3.Take(5)
 
 	fmt.Println(err)
 }
@@ -147,16 +188,14 @@ import (
 	"time"
 	"errors"
 	"github.com/b3ntly/bucket"
-	"github.com/b3ntly/bucket/storage"
 	"fmt"
 )
 
 func main(){
-	// use in-memory storage
-	store, _ := storage.NewStorage("memory", nil)
-	// error == nil
-
-	b, _ := bucket.NewBucket("simple_bucket", 5, store)
+	b, _ := bucket.New(&bucket.Options{
+		Name: "my_bucket",
+		Capacity: 10,
+	})
 	// error == nil
 
 	watchable := b.Watch(10, time.Second * 5)
@@ -191,13 +230,21 @@ func main(){
 * Fixed examples
 * Added more documentation and comments  
 
+# Changelog for version 0.4
+
+* Shortened "constructor" names
+* Default options
+* Better "constructor" signatures
+* bucket.DynamicFill()
+* bucket.TakeAll()
+
 ## Benchmarks
 
 ```golang
 go test -bench .
 ```
 
-These benchmarks are fairly incomplete and should be taken with a shot of tequila.
+These benchmarks are fairly incomplete and should be taken with a grain of salt.
 
 
 Version 0.1
@@ -244,6 +291,24 @@ Redis
 | BenchmarkBucket_Create-8 | 10000      | 75309 ns/op |
 | BenchmarkBucket_Take-8   | 30000      | 49815 ns/op  |
 | BenchmarkBucket_Put-8    | 50000      | 30638 ns/op  |
+
+Version 0.4
+
+Memory
+
+| Benchmark                | Operations | ns/op  |
+|--------------------------|------------|--------|
+| BenchmarkBucket_Create-8 | 10000      | 715 ns/op |
+| BenchmarkBucket_Take-8   | 30000      | 132 ns/op  |
+| BenchmarkBucket_Put-8    | 50000      | 142 ns/op  |
+
+Redis
+
+| Benchmark                | Operations | ns/op  |
+|--------------------------|------------|--------|
+| BenchmarkBucket_Create-8 | 10000      | 98582 ns/op |
+| BenchmarkBucket_Take-8   | 30000      | 47716 ns/op  |
+| BenchmarkBucket_Put-8    | 50000      | 31350 ns/op  |
 
 
 
